@@ -1,6 +1,15 @@
-const { SystemRoles, CacheKeys, roleDefaults } = require('librechat-data-provider');
+const {
+  CacheKeys,
+  SystemRoles,
+  roleDefaults,
+  PermissionTypes,
+  removeNullishValues,
+  promptPermissionsSchema,
+  bookmarkPermissionsSchema,
+} = require('librechat-data-provider');
 const getLogStores = require('~/cache/getLogStores');
 const Role = require('~/models/schema/roleSchema');
+const { logger } = require('~/config');
 
 /**
  * Retrieve a role by name and convert the found role document to a plain object.
@@ -61,6 +70,52 @@ const updateRoleByName = async function (roleName, updates) {
   }
 };
 
+const permissionSchemas = {
+  [PermissionTypes.PROMPTS]: promptPermissionsSchema,
+  [PermissionTypes.BOOKMARKS]: bookmarkPermissionsSchema,
+};
+
+/**
+ * Updates access permissions for a specific role and permission type.
+ * @param {SystemRoles} roleName - The role to update.
+ * @param {PermissionTypes} permissionType - The type of permission to update.
+ * @param {Object.<Permissions, boolean>} permissions - Permissions to update and their values.
+ */
+async function updateAccessPermissions(roleName, permissionType, _permissions) {
+  const permissions = removeNullishValues(_permissions);
+  if (Object.keys(permissions).length === 0) {
+    return;
+  }
+
+  try {
+    const role = await getRoleByName(roleName);
+    if (!role || !permissionSchemas[permissionType]) {
+      return;
+    }
+
+    await updateRoleByName(roleName, {
+      [permissionType]: {
+        ...role[permissionType],
+        ...permissionSchemas[permissionType].partial().parse(permissions),
+      },
+    });
+
+    Object.entries(permissions).forEach(([permission, value]) =>
+      logger.info(
+        `Updated '${roleName}' role ${permissionType} '${permission}' permission to: ${value}`,
+      ),
+    );
+  } catch (error) {
+    logger.error(`Failed to update ${roleName} role ${permissionType} permissions:`, error);
+  }
+}
+
+const updatePromptsAccess = (roleName, permissions) =>
+  updateAccessPermissions(roleName, PermissionTypes.PROMPTS, permissions);
+
+const updateBookmarksAccess = (roleName, permissions) =>
+  updateAccessPermissions(roleName, PermissionTypes.BOOKMARKS, permissions);
+
 /**
  * Initialize default roles in the system.
  * Creates the default roles (ADMIN, USER) if they don't exist in the database.
@@ -83,4 +138,6 @@ module.exports = {
   getRoleByName,
   initializeRoles,
   updateRoleByName,
+  updatePromptsAccess,
+  updateBookmarksAccess,
 };

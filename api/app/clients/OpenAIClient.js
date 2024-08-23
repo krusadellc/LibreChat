@@ -1182,7 +1182,15 @@ ${convo}
       }
 
       let UnexpectedRoleError = false;
+      /** @type {Promise<void>} */
+      let streamPromise;
+      /** @type {(value: void | PromiseLike<void>) => void} */
+      let streamResolve;
+
       if (modelOptions.stream) {
+        streamPromise = new Promise((resolve) => {
+          streamResolve = resolve;
+        });
         const stream = await openai.beta.chat.completions
           .stream({
             ...modelOptions,
@@ -1194,13 +1202,17 @@ ${convo}
           .on('error', (err) => {
             handleOpenAIErrors(err, errorCallback, 'stream');
           })
-          .on('finalChatCompletion', (finalChatCompletion) => {
+          .on('finalChatCompletion', async (finalChatCompletion) => {
             const finalMessage = finalChatCompletion?.choices?.[0]?.message;
-            if (finalMessage && finalMessage?.role !== 'assistant') {
+            if (!finalMessage) {
+              return;
+            }
+            await streamPromise;
+            if (finalMessage?.role !== 'assistant') {
               finalChatCompletion.choices[0].message.role = 'assistant';
             }
 
-            if (finalMessage && !finalMessage?.content?.trim()) {
+            if (typeof finalMessage.content !== 'string' || finalMessage.content.trim() === '') {
               finalChatCompletion.choices[0].message.content = intermediateReply;
             }
           })
@@ -1222,6 +1234,8 @@ ${convo}
 
           await sleep(streamRate);
         }
+
+        streamResolve();
 
         if (!UnexpectedRoleError) {
           chatCompletion = await stream.finalChatCompletion().catch((err) => {
@@ -1250,14 +1264,23 @@ ${convo}
         throw new Error('Chat completion failed');
       }
 
-      const { message, finish_reason } = chatCompletion.choices[0];
-      if (chatCompletion) {
-        this.metadata = { finish_reason };
+      const { choices } = chatCompletion;
+      if (!Array.isArray(choices) || choices.length === 0) {
+        logger.warn('[OpenAIClient] Chat completion response has no choices');
+        return intermediateReply;
       }
+
+      const { message, finish_reason } = choices[0] ?? {};
+      this.metadata = { finish_reason };
 
       logger.debug('[OpenAIClient] chatCompletion response', chatCompletion);
 
-      if (!message?.content?.trim() && intermediateReply.length) {
+      if (!message) {
+        logger.warn('[OpenAIClient] Message is undefined in chatCompletion response');
+        return intermediateReply;
+      }
+
+      if (typeof message.content !== 'string' || message.content.trim() === '') {
         logger.debug(
           '[OpenAIClient] chatCompletion: using intermediateReply due to empty message.content',
           { intermediateReply },

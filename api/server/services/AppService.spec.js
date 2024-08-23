@@ -23,6 +23,8 @@ jest.mock('./Files/Firebase/initialize', () => ({
 }));
 jest.mock('~/models/Role', () => ({
   initializeRoles: jest.fn(),
+  updatePromptsAccess: jest.fn(),
+  updateBookmarksAccess: jest.fn(),
 }));
 jest.mock('./ToolService', () => ({
   loadAndFormatTools: jest.fn().mockReturnValue({
@@ -97,8 +99,6 @@ describe('AppService', () => {
       socialLogins: ['testLogin'],
       fileStrategy: 'testStrategy',
       interfaceConfig: expect.objectContaining({
-        privacyPolicy: undefined,
-        termsOfService: undefined,
         endpointsMenu: true,
         modelSelect: true,
         parameters: true,
