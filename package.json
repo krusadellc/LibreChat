@@ -117,9 +117,9 @@
     ]
   },
   "dependencies": {
-    "@stripe/react-stripe-js": "^2.8.0",
-    "@stripe/stripe-js": "^4.4.0",
+    "@stripe/react-stripe-js": "^2.8.1",
+    "@stripe/stripe-js": "^4.9.0",
     "module-alias": "^2.2.3",
-    "stripe": "^16.10.0"
+    "stripe": "^16.12.0"
   }
 }
