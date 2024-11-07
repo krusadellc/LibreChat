@@ -2,17 +2,34 @@ const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { logger } = require('~/config');
-const { upgradeSubscription, handleSubscriptionUpdated } = require('../services/SubscriptionService');
+const { upgradeSubscription, changePlan, handleSubscriptionUpdated, purchaseTokens, handleTokenPurchase } = require('../services/SubscriptionService');
 
 router.post('/upgrade', async (req, res) => {
-  const { userId, priceId } = req.body;
+  const { userId, priceId, type } = req.body;
 
   try {
-    const session = await upgradeSubscription(userId, priceId);
+    let session;
+    if (type === 'token') {
+      session = await purchaseTokens(userId, priceId);
+    } else {
+      session = await upgradeSubscription(userId, priceId);
+    }
     res.json({ sessionId: session.id });
   } catch (error) {
     logger.error('[/upgrade] Error:', error);
     res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+
+router.post('/change-plan', async (req, res) => {
+  const { userId, newPriceId } = req.body;
+
+  try {
+    await changePlan(userId, newPriceId);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('[/change-plan] Error:', error);
+    res.status(500).json({ error: 'Failed to change plan' });
   }
 });
 
@@ -34,16 +51,21 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
-        // Only handle initial subscription creation
         const session = event.data.object;
-        const subscription = await stripe.subscriptions.retrieve(session.subscription);
-        await handleSubscriptionUpdated({
-          ...subscription,
-          metadata: {
-            userId: session.client_reference_id,
-            context: 'initial',
-          },
-        });
+        // Check if this is a token purchase
+        if (session.metadata?.type === 'token_purchase') {
+          await handleTokenPurchase(session);
+        } else {
+          // Handle regular subscription creation
+          const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          await handleSubscriptionUpdated({
+            ...subscription,
+            metadata: {
+              userId: session.client_reference_id,
+              context: 'initial',
+            },
+          });
+        }
         break;
       }
 
@@ -56,15 +78,25 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         break;
 
       case 'invoice.payment_succeeded': {
-        // Only handle subscription renewals
         const invoice = event.data.object;
+        const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+
         if (invoice.billing_reason === 'subscription_cycle') {
-          const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+          // Handle regular renewal
           await handleSubscriptionUpdated({
             ...subscription,
             metadata: {
               userId: subscription.metadata.userId,
               context: 'renewal',
+            },
+          });
+        } else if (invoice.billing_reason === 'subscription_update') {
+          // Handle immediate plan change
+          await handleSubscriptionUpdated({
+            ...subscription,
+            metadata: {
+              userId: subscription.metadata.userId,
+              context: 'update',
             },
           });
         }
