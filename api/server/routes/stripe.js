@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { logger } = require('~/config');
-const { upgradeSubscription, changePlan, handleSubscriptionUpdated, purchaseTokens, handleTokenPurchase } = require('../services/SubscriptionService');
+const { upgradeSubscription, changePlan, handleSubscriptionUpdated, purchaseTokens, handleTokenPurchase, deletePlan } = require('../services/SubscriptionService');
 
 router.post('/upgrade', async (req, res) => {
   const { userId, priceId, type } = req.body;
@@ -18,6 +18,17 @@ router.post('/upgrade', async (req, res) => {
   } catch (error) {
     logger.error('[/upgrade] Error:', error);
     res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+
+router.post('/cancel', async (req, res) => {
+  const { userId } = req.body;
+  try {
+    await deletePlan(userId);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('[/change-plan] Error:', error);
+    res.status(500).json({ error: 'Failed to change plan' });
   }
 });
 

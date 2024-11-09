@@ -113,6 +113,7 @@ export type TUser = {
   createdAt: string;
   updatedAt: string;
   subscription: string;
+  subscriptionExpiresAt?: Date;
 };
 
 export type TGetConversationsResponse = {

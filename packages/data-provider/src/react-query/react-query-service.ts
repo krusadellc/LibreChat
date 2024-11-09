@@ -124,6 +124,21 @@ export const useUpdateMessageMutation = (
   });
 };
 
+export const useCancelSubscriptionMutation = (): UseMutationResult<
+  unknown,
+  unknown,
+  string,
+  unknown
+> => {
+  const queryClient = useQueryClient();
+  return useMutation((userId: string) => dataService.cancelSubscription(userId), {
+    onSuccess: () => {
+      queryClient.invalidateQueries([QueryKeys.user]);
+      queryClient.invalidateQueries([QueryKeys.balance]);
+    },
+  });
+};
+
 export const useUpdateMessageContentMutation = (
   conversationId: string,
 ): UseMutationResult<unknown, unknown, t.TUpdateMessageContent, unknown> => {

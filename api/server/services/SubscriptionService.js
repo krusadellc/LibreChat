@@ -90,6 +90,34 @@ async function changePlan(userId, newPriceId) {
   });
 }
 
+async function deletePlan(userId) {
+  const user = await getUserById(userId);
+  if (!user || !user.stripeCustomerId) {
+    throw new Error('User not found or no subscription exists');
+  }
+
+  const subscriptions = await stripe.subscriptions.list({
+    customer: user.stripeCustomerId,
+    status: 'active',
+    limit: 1,
+  });
+
+  if (!subscriptions.data.length) {
+    throw new Error('No active subscription found');
+  }
+
+  const subscription = subscriptions.data[0];
+
+  // Schedule the update for the next billing cycle
+  await stripe.subscriptions.update(subscription.id, {
+    cancel_at_period_end: true,
+    metadata: {
+      userId,
+      context: 'canceled',
+    },
+  });
+}
+
 async function purchaseTokens(userId, priceId) {
   const user = await getUserById(userId);
   if (!user) {
@@ -282,4 +310,5 @@ module.exports = {
   purchaseTokens,
   handleSubscriptionUpdated,
   handleTokenPurchase,
+  deletePlan,
 };

@@ -1051,6 +1051,10 @@ export enum SettingsTabValues {
    * Chat input commands
    */
   COMMANDS = 'commands',
+  /**
+   * Tab for plan changes
+   */
+  CHANGE_PLAN = 'change_plan',
 }
 
 export enum STTProviders {
