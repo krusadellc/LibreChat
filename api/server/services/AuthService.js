@@ -186,7 +186,7 @@ const registerUser = async (user, additionalData = {}) => {
       password: bcrypt.hashSync(password, salt),
       subscription: 'free',
       subscriptionStatus: 'active',
-      tokenBalance: 1000,
+      tokenBalance: 0,
       ...additionalData,
     };
 

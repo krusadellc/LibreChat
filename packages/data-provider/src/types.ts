@@ -112,6 +112,8 @@ export type TUser = {
   plugins: string[];
   createdAt: string;
   updatedAt: string;
+  subscription: string;
+  subscriptionExpiresAt?: Date;
 };
 
 export type TGetConversationsResponse = {

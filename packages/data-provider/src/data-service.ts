@@ -549,6 +549,10 @@ export function clearAllConversations(): Promise<unknown> {
   return request.post(endpoints.deleteConversation(), { arg: {} });
 }
 
+export const cancelSubscription = (userId: string): Promise<unknown> => {
+  return request.post(endpoints.cancelSubscription(), { userId });
+};
+
 export const listConversations = (
   params?: q.ConversationListParams,
 ): Promise<q.ConversationListResponse> => {

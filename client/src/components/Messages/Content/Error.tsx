@@ -122,7 +122,9 @@ const Error = ({ text }: { text: string }) => {
         {message}
         <br />
         <br />
-        <Button onClick={handleUpgradeClick}>Upgrade to Pro</Button>
+        <Button onClick={handleUpgradeClick}>
+          {user?.subscription === 'enterprise' ? 'Purchase More Tokens' : 'Upgrade Plan'}
+        </Button>
         {generations && (
           <>
             <br />
@@ -139,6 +141,7 @@ const Error = ({ text }: { text: string }) => {
             isOpen={isPricingModalOpen}
             onClose={() => setIsPricingModalOpen(false)}
             userId={user.id}
+            currentPlan={user.subscription}
           />
         )}
       </>

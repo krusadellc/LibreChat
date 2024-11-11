@@ -1,11 +1,11 @@
 import { useState, useRef } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
-import { MessageSquare, Command } from 'lucide-react';
+import { MessageSquare, Command, CreditCard } from 'lucide-react';
 import { SettingsTabValues } from 'librechat-data-provider';
 import type { TDialogProps } from '~/common';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { GearIcon, DataIcon, SpeechIcon, UserIcon, ExperimentIcon } from '~/components/svg';
-import { General, Chat, Speech, Beta, Commands, Data, Account } from './SettingsTabs';
+import { General, Chat, Speech, Beta, Commands, Data, Account, ChangePlan } from './SettingsTabs';
 import { useMediaQuery, useLocalize } from '~/hooks';
 import { cn } from '~/utils';
 
@@ -24,6 +24,7 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
       SettingsTabValues.SPEECH,
       SettingsTabValues.DATA,
       SettingsTabValues.ACCOUNT,
+      SettingsTabValues.CHANGE_PLAN,
     ];
     const currentIndex = tabs.indexOf(activeTab);
 
@@ -162,6 +163,11 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                         icon: <UserIcon />,
                         label: 'com_nav_setting_account',
                       },
+                      {
+                        value: SettingsTabValues.CHANGE_PLAN,
+                        icon: <CreditCard className="icon-sm" />,
+                        label: 'com_nav_setting_change_plan',
+                      },
                     ].map(({ value, icon, label }) => (
                       <Tabs.Trigger
                         key={value}
@@ -200,6 +206,9 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                     </Tabs.Content>
                     <Tabs.Content value={SettingsTabValues.ACCOUNT}>
                       <Account />
+                    </Tabs.Content>
+                    <Tabs.Content value={SettingsTabValues.CHANGE_PLAN}>
+                      <ChangePlan />
                     </Tabs.Content>
                   </div>
                 </Tabs.Root>

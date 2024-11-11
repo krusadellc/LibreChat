@@ -50,6 +50,8 @@ export const importConversation = () => `${conversationsRoot}/import`;
 
 export const forkConversation = () => `${conversationsRoot}/fork`;
 
+export const cancelSubscription = () => '/api/stripe/cancel';
+
 export const search = (q: string, pageNumber: string) =>
   `/api/search?q=${q}&pageNumber=${pageNumber}`;
 
